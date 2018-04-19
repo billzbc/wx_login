@@ -19,9 +19,11 @@ package-lock.json
 *.log
 *.gz
 
+# redis
+dump.rdb
 
-# Coveralls
-coverage
+# 软链接
+html
 
-# Benchmarking
-benchmarks/graphs
+# webstorm
+.idea

@@ -4,9 +4,12 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
+const Config = require('./config/config.conf');
 
 var index = require('./routes/index');
-var users = require('./routes/users');
+var user = require('./routes/user');
 
 var app = express();
 
@@ -15,15 +18,35 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
 // uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+// app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(cookieParser(Config.cookie_secret));
+app.use(session({
+  name: Config.session_name,
+  saveUninitialized: false, // 不自动保存未初始化的session，减少session存储
+  resave: true, // 并发访问可能导致存储被覆盖
+  secret: Config.cookie_secret,
+  cookie: {
+    path: '/',
+    httpOnly: false,
+    maxAge: Config.session_maxage
+  },
+  store: new RedisStore({
+    url: Config.redis_url,
+    ttl: Config.session_store_ttl,
+    prefix: Config.session_store_prefix
+  })
+
+}));
 
 app.use('/', index);
-app.use('/users', users);
+app.use('/user', user);
+
+app.use(express.static(path.join(__dirname, 'html')));
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
